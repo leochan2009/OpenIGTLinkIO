@@ -78,7 +78,7 @@ package "Devices" #DDDDDD {
     + fromIGTL() : int
     + fromIGTLResponse() : int
     + toIGTL() : int
-    + GetAvailableCommandName: std::vector<std::string> 
+    + GetAvailableCommandName(): std::vector<std::string> 
   }
 
   BaseConverter <|-- ImageConverter

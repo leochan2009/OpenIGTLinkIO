@@ -1,0 +1,160 @@
+@startuml
+package "OpenIGTLink"  #DDDDDF {
+}
+package "Device"  #DDDDDF {
+}
+package "Logic" #DDDDDD {
+  abstract class vtkObject {
+	}
+  
+  class vtkIGTLIOObject {
+    +InvokePendingModifiedEvent() : int
+    +Modified() : void
+    +SetDisableModifiedEvent() : void
+    +GetDisableModifiedEvent() : void
+    #vtkIGTLIOObject()
+    -DisableModifiedEvent
+    -ModifiedEventPending
+  }
+  class DeviceFactory {
+    +New() : DeviceFactory
+    +PrintSelf() : void
+    +GetCreator() : DeviceCreatorPointer
+    +GetAvailableDeviceTypes() : std::vector<std::string>
+    +create() : DevicePointer
+    -DeviceFactory()
+    -~DeviceFactory()
+    -registerCreator(): void
+    -Creator 
+  }
+  class CircularBuffer{
+    +New() : CircularBuffer
+    +PrintSelf(): void
+    +GetNumberOfBuffer(): int
+    +StartPush() : int
+    +EndPush() :void
+    +GetPushBuffer(): igtl::MessageBase::Pointer
+    +StartPull() : int
+    +EndPull() :void
+    +GetPullBuffer(): igtl::MessageBase::Pointer
+    +IsUpdated(): int
+    #CircularBuffer()
+    #~CircularBuffer()
+    #Mutex
+    #Last   
+    #InPush;  
+    #InUse    
+    #UpdateFlag
+    #DeviceType
+    #Size
+    #Data
+  }
+  class Connector{
+   -NameListType 
+   #Devices
+   #Name
+   #UID
+   #Type
+   #State
+   #Persistent
+   #Thread
+   #Mutex
+   #ServerSocket
+   #Socket
+   #ThreadID
+   #ServerPort
+   #ServerStopFlag
+   #ServerHostname
+   #Buffer
+   #CircularBufferMutex
+   #RestrictDeviceName
+   #EventQueue
+   #EventQueueMutex
+   #PushOutgoingMessageFlag
+   #PushOutgoingMessageMutex
+   #DeviceFactory
+   #CheckCRC
+   ..events..
+    ConnectedEvent = 118944
+    DisconnectedEvent = 118945
+    ActivatedEvent = 118946
+    DeactivatedEvent = 118947
+    NewDeviceEvent = 118949    
+    DeviceContentModifedEvent = 118950
+    RemovedDeviceEvent = 118951
+   ..
+   +PeriodicProcess():void
+   +SendCommand(): CommandDevicePointer
+   +AddDeviceIfNotPresent(): DevicePointer
+   +AddDevice(): int
+   +GetNumberOfDevices(): unsigned int
+   +RemoveDevice(): void
+   +RemoveDevice(): int
+   +DeviceContentModified() : void
+   +GetDevice(): DevicePointer
+   +HasDevice(): bool
+   +SendMessage(): int
+   +GetDeviceFactory(): DeviceFactoryPointer
+   +SetDeviceFactory(): void
+   +New(): Connector
+   +PrintSelf(): void
+   +SetName() : void
+   +GetName() : std::string
+   +SetUID() :void
+   +GetUID() :int
+   +SetServerPort() :void
+   +GetServerPort() :int
+   +SetType() : void
+   +GetType() : int
+   +SetState() : void
+   +GetState() : int
+   +SetRestrictDeviceName() : void
+   +GetRestrictDeviceName() : int
+   +SetPushOutgoingMessageFlag() : void
+   +GetPushOutgoingMessageFlag() : int
+   +SetPersistent() : void
+   +GetPersistent() : int
+   +GetServerHostname() : const char* 
+   +SetServerHostname() : void
+   +SetTypeServer() : int
+   +SetTypeClient() : int
+   +GetCheckCRC() : bool
+   +SetCheckCRC() : void
+   +Start() : int
+   +Stop() : int
+   -ThreadFunction() : void
+   -WaitForConnection() : int
+   -ReceiveController() : int
+   -SendData() : int
+   -Skip() : int
+   -GetUpdatedBuffersList() : unsigned int
+   -GetCircularBuffer() : CircularBufferPointer
+   -ImportDataFromCircularBuffer() : void
+   -ImportEventsFromEventBuffer() : void
+   -PushOutgoingMessages() : void
+   -PushNode() : int
+   #RequestInvokeEvent() : void
+   #RequestPushOutgoingMessages() : void
+   #Connector()
+   #~Connector()
+  }
+
+  vtkObject <|-- Device
+  Device <|-- ImageDevice
+  Device <|-- PolyDataDevice
+  Device <|-- StatusDevice
+  Device <|-- StringDevice
+  Device <|-- CommandDevice
+  Device <|-- TransformDevice
+  
+  top to bottom direction
+  ImageDevice "0..*"-->"1"ImageConverter
+  PolyDataDevice "0..*"-->"1"PolyDataConverter
+  StatusDevice "0..*"-->"1"StatusConverter
+  StringDevice "0..*"-->"1"StringConverter
+  TransformDevice "0..*"-->"1"TransformConverter
+  CommandDevice "0..*"-->"1"CommandConverter
+}
+"OpenIGTLink" <|-- "Logic"
+"Device" <|-- "Logic"
+@enduml
