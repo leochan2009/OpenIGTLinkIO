@@ -21,6 +21,7 @@
 #include <igtlTransformMessage.h>
 #include "igtlioLogicExport.h"
 #include "igtlioDevice.h"
+#include "igtlioCommandDevice.h"
 #include "igtlioUtilities.h"
 
 namespace igtlio
@@ -56,14 +57,14 @@ class OPENIGTLINKIO_LOGIC_EXPORT Logic : public vtkObject
 public:
   enum {
     //TODO: harmonize event handling for Logic, Connector, Device.
-    ConnectionAddedEvent        = 118960,
-    ConnectionAboutToBeRemovedEvent      = 118961,
+    ConnectionAddedEvent        = 118980,
+    ConnectionAboutToBeRemovedEvent      = 118981,
 
     NewDeviceEvent        = 118949,
     //DeviceModifiedEvent   = 118950, // must listen to each specific device in order to get this one.
     RemovedDeviceEvent    = 118951,
-    CommandReceivedEvent = Device::CommandReceivedEvent, // one of the connected COMMAND devices got a query
-    CommandResponseReceivedEvent = Device::CommandResponseReceivedEvent // one of the connected COMMAND devices got a response
+    CommandReceivedEvent = igtlio::CommandDevice::CommandReceivedEvent, // one of the connected COMMAND devices got a query
+    CommandResponseReceivedEvent = igtlio::CommandDevice::CommandResponseReceivedEvent // one of the connected COMMAND devices got a response
   };
 
  static Logic *New();
@@ -91,11 +92,15 @@ public:
  void RemoveDevice(unsigned int index);
  DevicePointer GetDevice(unsigned int index);
  int ConnectorIndexFromDevice( DevicePointer d );
-
+  
 
 protected:
  Logic();
  virtual ~Logic();
+ 
+ void onDeviceEventFunc(vtkObject *caller, unsigned long event, void *callData);
+ void onNewDeviceEventFunc(vtkObject *caller, unsigned long event, void *callData);
+ void onRemovedDeviceEventFunc(vtkObject *caller, unsigned long event, void *callData);
 
 private:
  std::vector<ConnectorPointer> Connectors;
@@ -106,12 +111,11 @@ private:
 
   int CreateUniqueConnectorID() const;
   std::vector<DevicePointer> CreateDeviceList() const;
-
-  vtkSmartPointer<class vtkCallbackCommand> NewDeviceCallback;
-  vtkSmartPointer<class vtkCallbackCommand> RemovedDeviceCallback;
-
-public:
-  vtkSmartPointer<class vtkCallbackCommand> DeviceEventCallback;
+  
+  unsigned long CommandReceivedEventTag;
+  unsigned long CommandResponseReceivedEventTag;
+  unsigned long NewDeviceEventTag;
+  unsigned long RemoveDeviceEventTag;
 
 };
 } // namespace igtlio

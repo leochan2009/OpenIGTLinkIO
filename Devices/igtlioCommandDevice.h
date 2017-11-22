@@ -14,6 +14,8 @@ class OPENIGTLINKIO_DEVICES_EXPORT CommandDevice : public Device
 {
 public:
   enum {
+    CommandReceivedEvent    = 119001, // COMMAND device got a query, COMMAND received
+    CommandResponseReceivedEvent = 119002,  // COMMAND device got a response, RTS_COMMAND received
     CommandModifiedEvent         = 118958,
   };
 

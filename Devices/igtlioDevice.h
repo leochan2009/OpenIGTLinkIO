@@ -56,9 +56,6 @@ public:
    ReceiveEvent          = 118948,
    ResponseEvent         = 118952,
    ModifiedEvent         = vtkCommand::ModifiedEvent,
-
-   CommandReceivedEvent    = 119001, // COMMAND device got a query, COMMAND received
-   CommandResponseReceivedEvent = 119002  // COMMAND device got a response, RTS_COMMAND received
  };
 
 

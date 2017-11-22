@@ -3,7 +3,7 @@ package "OpenIGTLink"  #DDDDDF {
 }
 package "Device"  #DDDDDF {
 }
-package "Logic" #DDDDDD {
+package "LogicPackage" #DDDDDD {
   abstract class vtkObject {
 	}
   
@@ -138,23 +138,61 @@ package "Logic" #DDDDDD {
    #Connector()
    #~Connector()
   }
-
-  vtkObject <|-- Device
-  Device <|-- ImageDevice
-  Device <|-- PolyDataDevice
-  Device <|-- StatusDevice
-  Device <|-- StringDevice
-  Device <|-- CommandDevice
-  Device <|-- TransformDevice
-  
-  top to bottom direction
-  ImageDevice "0..*"-->"1"ImageConverter
-  PolyDataDevice "0..*"-->"1"PolyDataConverter
-  StatusDevice "0..*"-->"1"StatusConverter
-  StringDevice "0..*"-->"1"StringConverter
-  TransformDevice "0..*"-->"1"TransformConverter
-  CommandDevice "0..*"-->"1"CommandConverter
+	
+	class Session{
+		+SendCommand() : CommandDevicePointer
+		+SendCommandResponse() : CommandDevicePointer
+		+SendImage() : ImageDevicePointer
+		+SendTransform() : TransformDevicePointer
+		+SendString() : StringDevicePointer
+		+SendStatus() : StatusDevicePointer
+		+New() : Session
+		+PrintSelf() : void
+		+StartServer() : void
+		+ConnectToServer() : void
+		+GetConnector() : ConnectorPointer
+		+SetConnector() : void
+		-Session()
+		-Connector
+		-waitForConnection() : bool
+	}
+	
+	class Logic {
+		-CommandReceivedEventTag
+		-CommandResponseReceivedEventTag
+		-NewDeviceEventTag
+		-RemoveDeviceEventTag
+		-Connectors
+		..events..
+		ConnectionAddedEvent        = 118980 
+		ConnectionAboutToBeRemovedEvent      = 118981
+		NewDeviceEvent        = 118949
+		RemovedDeviceEvent    = 118951
+		CommandReceivedEvent    = 119001
+		CommandResponseReceivedEvent = 119002
+		..
+		+New() : Logic
+		+PrintSelf() : void
+		+CreateConnector() : ConnectorPointer
+		+RemoveConnector() : int
+		+GetNumberOfConnectors() : int
+		+GetConnector() : ConnectorPointer
+		+StartServer() : SessionPointer
+		+ConnectToServer() : SessionPointer
+		+PeriodicProcess() : void
+		+GetNumberOfDevices() : int
+		+RemoveDevice() : void
+		+GetDevice() : DevicePointer
+		+ConnectorIndexFromDevice() : int
+		#Logic()
+		#~Logic()
+		#onDeviceEventFunc() : void
+		#onNewDeviceEventFunc() : void
+		#onRemovedDeviceEventFunc() : void
+		-CreateUniqueConnectorID() : int
+		-CreateDeviceList() : std::vector<DevicePointer>
+	}
 }
-"OpenIGTLink" <|-- "Logic"
-"Device" <|-- "Logic"
+"OpenIGTLink" <|-- "LogicPackage"
+"Device" <|-- "LogicPackage"
 @enduml

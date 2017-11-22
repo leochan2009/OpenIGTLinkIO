@@ -29,41 +29,6 @@
 
 namespace igtlio
 {
-
-//---------------------------------------------------------------------------
-void onNewDeviceEventFunc(vtkObject* caller, unsigned long eid, void* clientdata, void *calldata)
-{
-  Logic* logic = reinterpret_cast<Logic*>(clientdata);
-  logic->InvokeEvent(Logic::NewDeviceEvent, calldata);
-
-  Device* device = reinterpret_cast<Device*>(calldata);
-  device->AddObserver(Device::CommandReceivedEvent, logic->DeviceEventCallback);
-  device->AddObserver(Device::CommandResponseReceivedEvent, logic->DeviceEventCallback);
-}
-
-//---------------------------------------------------------------------------
-void onRemovedDeviceEventFunc(vtkObject* caller, unsigned long eid, void* clientdata, void *calldata)
-{
-  Logic* logic = reinterpret_cast<Logic*>(clientdata);
-  logic->InvokeEvent(Logic::RemovedDeviceEvent, calldata);
-
-  Device* device = reinterpret_cast<Device*>(calldata);
-  device->RemoveObserver(logic->DeviceEventCallback);
-}
-
-//---------------------------------------------------------------------------
-void onDeviceEventFunc(vtkObject* caller, unsigned long eid, void* clientdata, void *calldata)
-{
-  Logic* logic = reinterpret_cast<Logic*>(clientdata);
-
-  if ((eid==Device::CommandReceivedEvent) ||
-      (eid==Device::CommandResponseReceivedEvent))
-  {
-    logic->InvokeEvent(eid, calldata);
-  }
-}
-
-
 //---------------------------------------------------------------------------
 vtkStandardNewMacro(Logic);
 
@@ -71,17 +36,6 @@ vtkStandardNewMacro(Logic);
 //---------------------------------------------------------------------------
 Logic::Logic()
 {
-  NewDeviceCallback = vtkSmartPointer<vtkCallbackCommand>::New();
-  NewDeviceCallback->SetCallback(onNewDeviceEventFunc);
-  NewDeviceCallback->SetClientData(this);
-
-  RemovedDeviceCallback = vtkSmartPointer<vtkCallbackCommand>::New();
-  RemovedDeviceCallback->SetCallback(onRemovedDeviceEventFunc);
-  RemovedDeviceCallback->SetClientData(this);
-
-  DeviceEventCallback = vtkSmartPointer<vtkCallbackCommand>::New();
-  DeviceEventCallback->SetCallback(onDeviceEventFunc);
-  DeviceEventCallback->SetClientData(this);
 }
 
 //---------------------------------------------------------------------------
@@ -95,6 +49,35 @@ void Logic::PrintSelf(ostream& os, vtkIndent indent)
   os << indent << "vtkIGTLIOLogic:             " << this->GetClassName() << "\n";
 }
 
+//---------------------------------------------------------------------------
+void Logic::onDeviceEventFunc(vtkObject *caller, unsigned long event, void *callData)
+{
+  if ((event==CommandReceivedEvent) ||
+      (event==CommandResponseReceivedEvent))
+  {
+    this->InvokeEvent(event, callData);
+  }
+}
+
+//---------------------------------------------------------------------------
+void Logic::onNewDeviceEventFunc(vtkObject *caller, unsigned long event, void *callData)
+{
+  this->InvokeEvent(Logic::NewDeviceEvent, callData);
+
+  Device* device = reinterpret_cast<Device*>(callData);
+  this->CommandReceivedEventTag = device->AddObserver(CommandReceivedEvent, this, &igtlio::Logic::onDeviceEventFunc);
+  this->CommandResponseReceivedEventTag = device->AddObserver(CommandResponseReceivedEvent, this, &igtlio::Logic::onDeviceEventFunc);
+}
+
+//---------------------------------------------------------------------------
+void Logic::onRemovedDeviceEventFunc(vtkObject *caller, unsigned long event, void *callData)
+{
+  this->InvokeEvent(Logic::RemovedDeviceEvent, callData);
+
+  Device* device = reinterpret_cast<Device*>(callData);
+  device->RemoveObserver(this->CommandReceivedEventTag);
+  device->RemoveObserver(this->CommandResponseReceivedEventTag);
+}
 
 //---------------------------------------------------------------------------
 ConnectorPointer Logic::CreateConnector()
@@ -106,8 +89,8 @@ ConnectorPointer Logic::CreateConnector()
   connector->SetName(ss.str());
   Connectors.push_back(connector);
 
-  connector->AddObserver(Connector::NewDeviceEvent, NewDeviceCallback);
-  connector->AddObserver(Connector::RemovedDeviceEvent, RemovedDeviceCallback);
+  this->NewDeviceEventTag = connector->AddObserver(Connector::NewDeviceEvent, this, &Logic::onNewDeviceEventFunc);
+  this->RemoveDeviceEventTag = connector->AddObserver(Connector::RemovedDeviceEvent, this, &Logic::onRemovedDeviceEventFunc);
 
   this->InvokeEvent(ConnectionAddedEvent, connector.GetPointer());
   return connector;
@@ -129,8 +112,8 @@ int Logic::RemoveConnector(unsigned int index)
 {
   std::vector<ConnectorPointer>::iterator toRemove = Connectors.begin()+index;
 
-  toRemove->GetPointer()->RemoveObserver(NewDeviceCallback);
-  toRemove->GetPointer()->RemoveObserver(RemovedDeviceCallback);
+  toRemove->GetPointer()->RemoveObserver(this->NewDeviceEventTag);
+  toRemove->GetPointer()->RemoveObserver(this->RemoveDeviceEventTag);
 
   this->InvokeEvent(ConnectionAboutToBeRemovedEvent, toRemove->GetPointer());
   Connectors.erase(toRemove);
