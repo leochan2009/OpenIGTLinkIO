@@ -69,7 +69,7 @@ int main(int argc, char **argv)
 
   igtlio::VideoDevicePointer videoDevice;
   videoDevice = fixture.Server.Session->SendFrame("TestDevice_Image",
-                                                  fixture.CreateTestFrame());
+                                                  fixture.CreateTestImage());
   std::cout << "*** Sent message from Server to Client" << std::endl;
   //---------------------------------------------------------------------------
 

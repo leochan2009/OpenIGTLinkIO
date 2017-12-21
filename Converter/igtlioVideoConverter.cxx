@@ -10,7 +10,7 @@
  ==========================================================================*/
 
 #include "igtlioVideoConverter.h"
-
+#include "vtkTimerLog.h"
 #include <vtkImageData.h>
 #include <vtkMatrix4x4.h>
 #include <vtkVersion.h>
@@ -52,7 +52,7 @@ namespace igtlio
     }
 #endif
 #if defined(OpenIGTLink_USE_OpenHEVC)
-  if(videoMsg->GetCodecType().compare(IGTL_VIDEO_CODEC_NAME_OPENHEVC)==0)
+  if(videoMsg->GetCodecType().compare(IGTL_VIDEO_CODEC_NAME_X265)==0)
     {
     decoder = decoders.find(IGTL_VIDEO_CODEC_NAME_OPENHEVC)->second;
     }
@@ -94,11 +94,44 @@ namespace igtlio
     SourcePicture* pDecodedPic = new SourcePicture();
     pDecodedPic->data[0] = new igtl_uint8[Width * Height*3/2];
     memset(pDecodedPic->data[0], 0, Width * Height * 3 / 2);
+
+    // For latency and frame loss rate evaluatoin
+    //std::cerr << videoMessage->GetBitStreamSize() << " FrameIndex: " << videoMsg->GetMessageID() << std::endl;
+    FILE* pEvalFile = NULL;
+   igtl::TimeStamp::Pointer timeStamp = igtl::TimeStamp::New();
+   double timeForEval = vtkTimerLog::GetUniversalTime();
+   timeStamp->SetTime(timeForEval);
+   std::string fileNameTemp = "/Users/longquanchen/Documents/VideoStreaming/PaperCodecOptimization/EvaluationUltraSonixAndHospitalNetwork/FramesUltrasound/";
+   fileNameTemp.append(std::to_string(timeStamp->GetSecond())).append(".txt");
+   static std::string Evalfilename(fileNameTemp);
+   static bool headerWritten = false;
+   if (!headerWritten)
+   {
+     std::string headline = "MessageID PacketSize BeforeDecoding AfterDecoding";
+     headline.append("\r\n");
+     pEvalFile = fopen(Evalfilename.c_str(), "ab");
+     fwrite(headline.c_str(), 1, headline.size(), pEvalFile);
+     headerWritten = true;
+     fclose(pEvalFile);
+     pEvalFile = NULL;
+   }
+   
+    std::string beforeEncoding = std::to_string(timeStamp->GetSecond()*1e9 + timeStamp->GetNanosecond());
     if(!videoStreamDecoder->DecodeVideoMSGIntoSingleFrame(videoMsg, pDecodedPic))
       {
       pDecodedPic->~SourcePicture();
       return 0;
       }
+    pEvalFile = fopen(Evalfilename.c_str(), "ab");
+    std::string line = std::to_string(videoMsg->GetMessageID()).append(" ");
+    line.append(std::to_string(videoMsg->GetPackSize())).append(" ");
+    line.append(beforeEncoding).append(" ");
+    timeForEval = vtkTimerLog::GetUniversalTime();
+    timeStamp->SetTime(timeForEval);
+    line.append(std::to_string(timeStamp->GetSecond()*1e9 + timeStamp->GetNanosecond())).append(" ").append("\r\n");
+    fwrite(line.c_str(), 1, line.size(), pEvalFile);
+    fclose(pEvalFile);
+    pEvalFile = NULL;
     igtl_uint16 frameType = videoMsg->GetFrameType();
     bool isGrayImage = false;
     if(frameType > 0x00FF)//Using first byte of video frame type to indicate gray or color video. It might be better to change the video stream protocol to add additional field for indicating Gray or color image.
@@ -118,10 +151,19 @@ namespace igtlio
       {
       videoStreamDecoder->ConvertYUVToRGB(pDecodedPic->data[0], (uint8_t*)imageData->GetScalarPointer(),Height, Width);
       }
-    imageData->Modified();
+    std::string fileDirectory("/Users/longquanchen/Documents/VideoStreaming/PaperCodecOptimization/EvaluationUltraSonixAndHospitalNetwork/FramesUltrasound/ReceivedFrames/");
+    std::string fileName(to_string(videoMsg->GetMessageID()));
+    char * decodedPic = new char[Height*Width];
+    memcpy(decodedPic,pDecodedPic->data[0],Height*Width);
+    FILE* testFile = fopen(fileDirectory.append(fileName).append(".yuv").c_str(), "a");
+    fwrite(decodedPic, 1, Height*Width, testFile);
+    fclose(testFile);
+    delete[] decodedPic;
+    testFile = NULL;
     if (pDecodedPic->data[0]!=NULL)
       delete [] pDecodedPic->data[0];
     delete pDecodedPic;
+    imageData->Modified();
     return 1;
   }
   
