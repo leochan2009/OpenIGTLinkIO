@@ -25,11 +25,6 @@ set(OpenIGTLinkIO_INCLUDE_INSTALL "include/igtlio${OpenIGTLinkIO_VERSION_SUFFIX}
 include(GenerateExportHeader)
 
 ###########################################################
-# Find dependencies
-find_package(OpenIGTLink REQUIRED NO_MODULE)
-include(${OpenIGTLink_USE_FILE})
-
-###########################################################
 # Configuration
 if(NOT BUILD_SHARED_LIBS)
   set(BUILD_SHARED_LIBS ON CACHE BOOL "Build shared or static libs")
@@ -59,6 +54,24 @@ if(NOT (IGTLIO_QT_VERSION VERSION_EQUAL "4" OR IGTLIO_QT_VERSION VERSION_EQUAL "
     message(FATAL_ERROR "Expected value for IGTLIO_QT_VERSION is either '4' or '5'")
 endif()
 
+option(IGTLIO_USE_GUI "Build IGTLIO with an user interface" ON)
+
+option(IGTLIO_USE_EXAMPLES "Build IGTLIO examples" ON)
+
+option(BUILD_TESTING "Build tests" ON)
+
+option(OpenIGTLinkIO_SUPERBUILD "Superbuild or not." OFF)
+
+if(OpenIGTLinkIO_SUPERBUILD)
+  include(SuperBuild/Superbuild.cmake)
+  return()
+endif()
+
+###########################################################
+# Find dependencies
+find_package(OpenIGTLink REQUIRED NO_MODULE)
+include(${OpenIGTLink_USE_FILE})
+
 set (OpenIGTLinkIO_TARGETS igtlioLogic igtlioDevices igtlioConverter igtlioTools )
 set (OpenIGTLinkIO_INCLUDE_DIRS
   ${CMAKE_CURRENT_SOURCE_DIR}
@@ -74,14 +87,12 @@ add_subdirectory(Devices)
 add_subdirectory(Logic)
 add_subdirectory(Tools)
 
-option(IGTLIO_USE_GUI "Build IGTLIO with an user interface" ON)
 set(OpenIGTLinkIO_Qt_CONFIG_CODE "")
 if (${IGTLIO_USE_GUI})
   add_subdirectory(GUI)
   list (APPEND OpenIGTLinkIO_TARGETS igtlioGUI)
 endif()
 
-option(IGTLIO_USE_EXAMPLES "Build IGTLIO examples" ON)
 if (${IGTLIO_USE_EXAMPLES})
   add_subdirectory(Examples)
 endif ()
