@@ -39,7 +39,7 @@ CircularSectionBuffer::CircularSectionBuffer()
 
 int CircularSectionBuffer::Initialization()
 {
-  this->Mutex = vtkMutexLock::New();
+  this->Mutex = vtkSmartPointer<vtkMutexLock>::New();
   this->Mutex->Lock();
   // Allocate Circular buffer for the new device
   this->InUseBegin = -1;
@@ -62,7 +62,6 @@ int CircularSectionBuffer::Initialization()
 //---------------------------------------------------------------------------
 CircularSectionBuffer::~CircularSectionBuffer()
 {
-  this->Mutex->Delete();
 }
 
 
@@ -178,7 +177,6 @@ igtl::MessageBase::Pointer CircularSectionBuffer::GetPullBuffer()
 void CircularSectionBuffer::EndPull()
 {
   this->Mutex->Lock();
-  this->UpdateFlag = 0;
   int nextIndex = (this->InUseEnd+1) % this->BufferSize;
   if (this->DataStatus[nextIndex] == DataFilled)
     {
@@ -188,6 +186,11 @@ void CircularSectionBuffer::EndPull()
     {
     this->First = InUseEnd;
     }
+  if (this->PacketMode == SinglePacketMode)
+  {
+    this->InUseBegin = -1;
+    this->InUseEnd = -1;
+  }
   this->Mutex->Unlock();
 }
 

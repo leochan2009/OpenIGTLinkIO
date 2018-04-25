@@ -12,6 +12,7 @@
 
 #include <string>
 #include <vtkObject.h>
+#include <vtkSmartPointer.h>
 #include <igtlMessageBase.h>
 #include "igtlioLogicExport.h"
 
@@ -78,7 +79,7 @@ class OPENIGTLINKIO_LOGIC_EXPORT CircularSectionBuffer : public vtkObject
 
  protected:
 
-  vtkMutexLock*      Mutex;
+  vtkSmartPointer<vtkMutexLock>      Mutex;
   int                Last;        // updated by connector thread
   int                First;       // updated by connector thread
   int                InPush;      // updated by connector thread

@@ -454,6 +454,11 @@ int Connector::ReceiveController()
         {
         this->SectionBuffer[key]->SetPacketMode(igtlio::CircularSectionBuffer::MultiplePacketsMode);
         }
+      else
+        {
+        this->SectionBuffer[key]->SetBufferSize(IGTLCB_CIRC_BUFFER_SIZE);
+        this->SectionBuffer[key]->Initialization();
+        }
       this->CircularBufferMutex->Unlock();
       }
 
@@ -469,20 +474,14 @@ int Connector::ReceiveController()
       igtl::MessageBase::Pointer buffer = circBuffer->GetPushBuffer();
       buffer->SetMessageHeader(headerMsg);
       buffer->AllocatePack();
-
-      vtkDebugMacro("Waiting to receive body:  size=" << buffer->GetPackBodySize()
-                    << ", GetBodySizeToRead=" << buffer->GetBodySizeToRead()
-                    << ", GetPackSize=" << buffer->GetPackSize());
       int read = this->Socket->Receive(buffer->GetPackBodyPointer(), buffer->GetPackBodySize());
-      vtkDebugMacro("Received body: " << read);
       if (read != buffer->GetPackBodySize())
         {
         if(!this->ServerStopFlag)
-        {
+          {
           vtkErrorMacro ("Only read " << read << " but expected to read "
-                         << buffer->GetPackBodySize() << "\n");
-        }
-        continue;
+                          << buffer->GetPackBodySize() << "\n");
+          }
         }
 
       circBuffer->EndPush();
@@ -509,12 +508,7 @@ bool Connector::ReceiveCommandMessage(igtl::MessageHeader::Pointer headerMsg)
   buffer->InitBuffer();
   buffer->SetMessageHeader(headerMsg);
   buffer->AllocateBuffer();
-
-  vtkDebugMacro("Waiting to receive body:  size=" << buffer->GetPackBodySize()
-    << ", GetBodySizeToRead=" << buffer->GetBodySizeToRead()
-    << ", GetPackSize=" << buffer->GetPackSize());
   int read = this->Socket->Receive(buffer->GetPackBodyPointer(), buffer->GetPackBodySize());
-  vtkDebugMacro("Received body: " << read);
   if (read != buffer->GetPackBodySize())
   {
     if (!this->ServerStopFlag)
@@ -612,7 +606,7 @@ void Connector::ImportDataFromCircularBuffer()
     CircularSectionBuffer* circBuffer = this->GetCircularSectionBuffer(key);
     circBuffer->StartPull();
     DevicePointer device = NULL;
-    while(circBuffer->IsSectionBufferInProcess())
+    while (circBuffer->IsSectionBufferInProcess())
     {
     igtl::MessageBase::Pointer messageFromBuffer = circBuffer->GetPullBuffer();
 
