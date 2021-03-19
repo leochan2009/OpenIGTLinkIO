@@ -502,7 +502,18 @@ bool igtlioConnector::ReceiveController(int clientID)
 
   //----------------------------------------------------------------
   // Search Circular Buffer
-  igtlioDeviceKeyType key = igtlioDeviceKeyType::CreateDeviceKey(headerMsg);
+  std::string keyname = headerMsg->GetDeviceName();
+  if (headerMsg->GetDeviceName()[0] == '\0')
+  {
+    // The following device name never conflicts with any
+    // device names comming from OpenIGTLink message, since
+    // the number of characters is beyond the limit.
+    std::stringstream ss;
+    ss << "OpenIGTLink_MESSAGE_" << headerMsg->GetDeviceType();
+    keyname = ss.str();
+  }
+  igtlioDeviceKeyType key = igtlioDeviceKeyType(headerMsg->GetDeviceType(), keyname);
+  
 
   // Intercept command devices before they are added to the circular buffer, and add them to the command queue
   if (std::strcmp(headerMsg->GetDeviceType(), "COMMAND") == 0 || std::strcmp(headerMsg->GetDeviceType(), "RTS_COMMAND") == 0)
@@ -735,7 +746,12 @@ void igtlioConnector::ImportDataFromCircularBuffer()
       vtkErrorMacro(<< "Received unknown device type " << messageFromBuffer->GetDeviceType() << ", device=" << messageFromBuffer->GetDeviceName());
       continue;
       }
-
+      
+    if (strncmp("OpenIGTLink_MESSAGE_", (*nameIter).Key.name.c_str(), IGTL_HEADER_NAME_SIZE) == 0)
+      {
+        // buffer with "OpenIGTLink_MESSAGE_ prefix" corresponds to device without a name;
+      key.name = "";
+      }
     device = this->GetDevice(key);
 
     if ((device.GetPointer()!=NULL) && !(igtlioDeviceKeyType::CreateDeviceKey(device)==igtlioDeviceKeyType::CreateDeviceKey(messageFromBuffer)))
